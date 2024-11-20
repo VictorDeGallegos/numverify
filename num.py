@@ -3,46 +3,30 @@ import re
 import platform
 import os
 
-print("[*] Checking Requirements Module.....")
-if platform.system().startswith("Linux"):
-    try:
-        import requests
-    except ImportError:
-        os.system("python3 -m pip install requests -q -q -q")
-        import requests
-    try:
-        from pystyle import *
-    except:
-        os.system("python3 -m pip install pystyle -q -q -q")
-        from pystyle import *
-    try:
-        import colorama
-        from colorama import Fore, Back, Style
-    except ImportError:
-        os.system("python3 -m pip install colorama -q -q -q")
-        import colorama
-        from colorama import Fore, Back, Style
+try:
+    # Check and install the required modules
+    import requests
+except ImportError:
+    os.system("python3 -m pip install requests -q -q -q")
+    import requests
 
-elif platform.system().startswith("Windows"):
-    try:
-        import requests
-    except ImportError:
-        os.system("python -m pip install requests -q -q -q")
-        import requests
-    try:
-        import colorama
-        from colorama import Fore, Back, Style
-    except ImportError:
-        os.system("python -m pip install colorama -q -q -q")
-        import colorama
-        from colorama import Fore, Back, Style
-    try:
-        from pystyle import *
-    except:
-        os.system("python -m pip install pystyle -q -q -q")
-        from pystyle import *
+try:
+    import colorama
+    from colorama import Fore, Back, Style
+    colorama.init()  # Initialize colorama
+except ImportError:
+    os.system("python3 -m pip install colorama -q -q -q")
+    import colorama
+    from colorama import Fore, Back, Style
+    colorama.init()  # Initialize colorama after importing
 
-colorama.deinit()
+try:
+    from pystyle import Colors, Colorate, Center
+except ImportError:
+    os.system("python3 -m pip install pystyle -q -q -q")
+    from pystyle import Colors, Colorate, Center
+
+# Banner display
 banner = Center.XCenter(r"""********************************************************************
 *        ___   _              __     __   _____ _  __     __        *
 *       / / \ | |_   _ _ __ __\ \   / /__|___ /(_)/ _|_   \ \       *
@@ -58,46 +42,65 @@ banner = Center.XCenter(r"""****************************************************
           Note: Enter Number with country code but without +
                           (9123456789098)
 """)
+
+# Validate mobile number format
+
+
 def is_valid_mobile_number(mobile_number):
-    pattern = re.compile(r"(?:(?:\+|00)91)?[6-9]\d{9}")
+    pattern = re.compile(r"^\d{10,15}$")  # Allow 10 to 15 digits
     return pattern.match(mobile_number) is not None
+
+# Main function to check the mobile number
+
 
 def check_number():
     try:
-        os_name = "cls" if platform.system() == "Windows" else "clear" if platform.system() == "Linux" else "Unknown"
-        os.system(os_name)
+        # Clear the console
+        os.system("cls" if platform.system() == "Windows" else "clear")
         print(Colorate.Vertical(Colors.green_to_yellow, banner, 2))
+
         mobile_number = input(Fore.GREEN + '\n[+] Enter Mobile Number: ')
         if is_valid_mobile_number(mobile_number):
+            # Decode the API URL and key
             message = base64.b64decode(
                 'aHR0cHM6Ly9hcGkuYXBpbGF5ZXIuY29tL251bWJlcl92ZXJpZmljYXRpb24vdmFsaWRhdGU/bnVtYmVyPQ=='.encode(
                     'ascii')).decode('ascii')
             url = f"{message}{mobile_number}"
-            hello = base64.b64decode('dGdDckRFOVF0QVF4Q1lvNnk4dHprMUdtQTJKbzBYZmI='.encode('ascii')).decode('ascii')
-            payload = {}
-            headers = {
-                "apikey": f"{hello}"
-            }
-            response = requests.request("GET", url, headers=headers, data=payload)
-            status_code = response.status_code
-            if status_code == 200:
+            api_key = base64.b64decode(
+                'dGdDckRFOVF0QVF4Q1lvNnk4dHprMUdtQTJKbzBYZmI='.encode('ascii')).decode('ascii')
+
+            # Send the request
+            headers = {"apikey": f"{api_key}"}
+            response = requests.get(url, headers=headers)
+
+            if response.status_code == 200:
+                # Parse and display the response JSON
                 response_json = response.json()
-                country_code = response_json["country_code"]
-                number = response_json["number"]
-                country_name = response_json["country_name"]
-                country_prefix = response_json["country_prefix"]
-                international_format = response_json["international_format"]
-                line_type = response_json["line_type"]
-                local_format = response_json["local_format"]
-                valid = response_json["valid"]
-                location = response_json["location"]
-                print(
-                    f"Country code: {country_code}\nNumber: {number}\nCountry name: {country_name}\nCountry prefix: {country_prefix}\nInternational format: {international_format}\nLine type: {line_type}\nLocal format: {local_format}\nLocation: {location}\nValid: {valid}")
+                print(f"""
+Country code: {response_json.get("country_code", "N/A")}
+Number: {response_json.get("number", "N/A")}
+Country name: {response_json.get("country_name", "N/A")}
+Country prefix: {response_json.get("country_prefix", "N/A")}
+International format: {response_json.get("international_format", "N/A")}
+Line type: {response_json.get("line_type", "N/A")}
+Local format: {response_json.get("local_format", "N/A")}
+Location: {response_json.get("location", "N/A")}
+Valid: {response_json.get("valid", "N/A")}
+""")
             else:
-                print(Fore.RED + f"Error: {status_code}")
+                # Display error if response is not successful
+                print(Fore.RED + f"Error: {response.status_code}")
         else:
+            # Invalid mobile number input
             print(Fore.RED + '[*] Invalid Mobile Number....')
     except KeyboardInterrupt:
-        print(Fore.RED+'\n[*] You Pressed The Wrong Button....')
-check_number()
-#coded by: machine1337
+        # Handle user interrupt
+        print(Fore.RED + '\n[*] You Pressed The Wrong Button....')
+    except Exception as e:
+        # Handle unexpected errors
+        print(Fore.RED + f'\n[*] Unexpected error: {str(e)}')
+
+
+# Call the main function
+if __name__ == "__main__":
+    check_number()
